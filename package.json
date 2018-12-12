@@ -1,0 +1,25 @@
+{
+	"name": "spectrum-installer",
+	"version": "1.0.0",
+	"description": "",
+	"main": "app.js",
+	"scripts": {
+		"start": "electron .",
+		"pack": "electron-zip-packager ./ --overwrite --out=dist",
+		"pack:all": "electron-zip-packager ./ --platform=win32,linux --arch=x64,ia32 --overwrite --out=dist",
+		"build": "npm run pack:all"
+	},
+	"author": "",
+	"license": "ISC",
+	"devDependencies": {
+		"electron": "^3.0.11",
+		"electron-zip-packager": "^4.0.2"
+	},
+	"dependencies": {
+		"electron-is-dev": "^1.0.1",
+		"electron-require": "^0.3.0",
+		"fs-extra": "^7.0.1",
+		"shelljs": "^0.8.3",
+		"unzip": "^0.1.11"
+	}
+}
