@@ -5,6 +5,7 @@ const fs = rq("fs-extra");
 const path = rq("path");
 const unzip = rq("unzip");
 const isDev = rq("electron-is-dev");
+const fetch = rq("node-fetch");
 // const shell = rq.electron("shell");
 // const {
 // 	spawn
@@ -53,16 +54,47 @@ window.onload = () => {
 	submitBtn.addEventListener("click", () => {
 		const distLocInput = document.getElementById("distLocation");
 		const specLocInput = document.getElementById("specLocation");
-		if (distLocInput.value && specLocInput.value) {
-			fs.createReadStream(specLocInput.value).pipe(unzip.Extract({
-				path: `${path.resolve(__dirname)}/tmp/`
-			}).on("close", () => {
-				console.log("Written");
-				installSpectrum(distLocInput.value);
-			}));
+		if (!specLocInput.value) {
+			console.log("Downloading latest Spectrum...");
+			downloadLatest(distLocInput.value);
+		} else if (distLocInput.value && specLocInput.value) {
+			extractZip(specLocInput.value, distLocInput.value);
 		}
 	});
 };
+
+function extractZip(specLoc, distLoc) {
+	console.log(specLoc, distLoc);
+	fs.createReadStream(specLoc).pipe(unzip.Extract({
+		path: `${path.resolve(__dirname)}/tmp/`
+	}).on("close", () => {
+		console.log("Extracted");
+		if (path.resolve(specLoc) === path.resolve(`${__dirname}/Spectrum.zip`)) {
+			fs.remove(path.resolve(`${__dirname}/Spectrum.zip`));
+			console.log("Deleted downloaded Spectrum zip");
+		}
+		installSpectrum(distLoc);
+	}));
+}
+
+async function downloadLatest(distLoc) {
+	const latestRes = await fetch("https://github.com/Ciastex/Spectrum/releases/latest", {
+		method: "GET",
+		headers: {
+			"Cache-Control": "no-cache",
+			Accept: "application/json"
+		}
+	});
+	const latestjson = await latestRes.json();
+	console.log("Found latest release");
+	const currentRes = await fetch(`https://github.com/Ciastex/Spectrum/releases/download/${latestjson.tag_name}/Spectrum.zip`);
+	const dest = fs.createWriteStream(`${path.resolve(__dirname)}/Spectrum.zip`);
+	currentRes.body.pipe(dest);
+	dest.on("close", () => {
+		console.log("Downloaded to", path.resolve(__dirname));
+		extractZip(`${path.resolve(__dirname)}/Spectrum.zip`, distLoc);
+	});
+}
 
 async function installSpectrum(distLoc) {
 	try {
@@ -90,14 +122,14 @@ async function installSpectrum(distLoc) {
 					for (const i of failIndex) {
 						str += lines[i] + "\r\n";
 					}
-					const failP = document.createElement("P");
+					const failP = document.getElementById("failP") || document.getElementById("successP") || document.createElement("P");
 					failP.setAttribute("id", "failP");
-					failP.appendChild(document.createTextNode(str));
+					failP.innerText = str;
 					document.body.appendChild(failP);
 				} else {
-					const successP = document.createElement("P");
+					const successP = document.getElementById("failP") || document.getElementById("successP") || document.createElement("P");
 					successP.setAttribute("id", "successP");
-					successP.appendChild(document.createTextNode("Successfully installed Spectrum!"));
+					successP.innerText = "Successfully installed Spectrum!";
 					document.body.appendChild(successP);
 				}
 				child.kill("SIGINT");
@@ -110,29 +142,6 @@ async function installSpectrum(distLoc) {
 				}
 			}
 		});
-
-		// shell.openExternal(`${distLoc}\\Distance_Data\\Managed\\${file}`, {
-		// 	cwd: `${distLoc}\\Distance_Data\\Managed`
-		// });
-
-		// const uh = spawn("cmd.exe", ["/c", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Distance\\Distance_Data\\Managed\\install_windows.bat"], {
-		// 	cwd: "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Distance\\Distance_Data\\Managed"
-		// });
-		// uh.on("error", (err) => {
-		// 	console.error(err);
-		// });
-		// uh.on("data", (data) => {
-		// 	console.log(data);
-		// });
-		// uh.on("close", (code) => {
-		// 	console.log(code);
-		// });
-
-		//shell.openItem(`"${distLoc}\\Distance_Data\\Managed\\${file}"`);
-
-		// exec(`cd "${distLoc}\\Distance_Data\\Managed" & pause`, {
-		// 	shell: true
-		// });
 	} catch (e) {
 		console.error(e);
 	}
