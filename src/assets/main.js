@@ -52,9 +52,14 @@ window.onload = () => {
 		});
 	});
 	submitBtn.addEventListener("click", () => {
+		const infoP = document.getElementById("failP") || document.getElementById("successP") || document.getElementById("infoP") || document.createElement("P");
+		infoP.setAttribute("id", "infoP");
+		infoP.innerText = "Checking...";
+		document.body.appendChild(infoP);
 		const distLocInput = document.getElementById("distLocation");
 		const specLocInput = document.getElementById("specLocation");
 		if (!specLocInput.value) {
+			infoP.innerText = "Downloading...";
 			console.log("Downloading latest Spectrum...");
 			downloadLatest(distLocInput.value);
 		} else if (distLocInput.value && specLocInput.value) {
@@ -65,6 +70,8 @@ window.onload = () => {
 
 function extractZip(specLoc, distLoc) {
 	console.log(specLoc, distLoc);
+	const infoP = document.getElementById("failP") || document.getElementById("successP") || document.getElementById("infoP");
+	infoP.innerText = "Extracting...";
 	fs.createReadStream(specLoc).pipe(unzip.Extract({
 		path: `${path.resolve(__dirname)}/tmp/`
 	}).on("close", () => {
@@ -97,6 +104,8 @@ async function downloadLatest(distLoc) {
 }
 
 async function installSpectrum(distLoc) {
+	const infoP = document.getElementById("failP") || document.getElementById("successP") || document.getElementById("infoP");
+	infoP.innerText = "Installing...";
 	try {
 		await fs.copy(`${path.resolve(__dirname)}/tmp/`, `${distLoc}/Distance_Data/`);
 		console.log("Copied");
@@ -122,15 +131,15 @@ async function installSpectrum(distLoc) {
 					for (const i of failIndex) {
 						str += lines[i] + "\r\n";
 					}
-					const failP = document.getElementById("failP") || document.getElementById("successP") || document.createElement("P");
+					const failP = document.getElementById("failP") || document.getElementById("successP") || document.getElementById("infoP");
 					failP.setAttribute("id", "failP");
 					failP.innerText = str;
-					document.body.appendChild(failP);
+					//document.body.appendChild(failP);
 				} else {
-					const successP = document.getElementById("failP") || document.getElementById("successP") || document.createElement("P");
+					const successP = document.getElementById("failP") || document.getElementById("successP") || document.getElementById("infoP");
 					successP.setAttribute("id", "successP");
 					successP.innerText = "Successfully installed Spectrum!";
-					document.body.appendChild(successP);
+					//document.body.appendChild(successP);
 				}
 				child.kill("SIGINT");
 				console.log("killed");
