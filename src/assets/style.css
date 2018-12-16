@@ -4,11 +4,11 @@ body {
 }
 
 input#distLocation {
-	width: 370px;
+	width: 100%;
 }
 
 input#specLocation {
-	width: 370px;
+	width: 100%;
 }
 
 p#failP {
@@ -20,7 +20,7 @@ p#successP {
 }
 
 input#submit {
-	position: absolute;
+	position: fixed;
 	bottom: 10;
 	right: 10;
 }

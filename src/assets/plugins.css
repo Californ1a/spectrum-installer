@@ -4,11 +4,11 @@ body {
 }
 
 input#distLocation {
-	width: 370px;
+	width: 100%;
 }
 
 input#submit {
-	position: absolute;
+	position: fixed;
 	bottom: 10;
 	right: 10;
 }
