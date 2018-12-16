@@ -25,7 +25,7 @@ function createWindow() {
 	win = new BrowserWindow({
 		//icon: path.join(__dirname, "src/assets/images/favicon.png"),
 		useContentSize: true,
-		backgroundColor: "#000",
+		backgroundColor: "#444",
 		width: w,
 		height: h,
 		resizable: false,
@@ -49,9 +49,27 @@ function createWindow() {
 		win = null;
 	});
 
+	function loadURL(pageName) {
+		win.loadURL(url.format({
+			pathname: path.join(__dirname, `src/${pageName}.html`),
+			protocol: "file:",
+			slashes: true
+		}));
+	}
+
 	const menu = Menu.buildFromTemplate([{
 		label: "Menu",
 		submenu: [{
+			label: "Spectrum",
+			click() {
+				loadURL("index");
+			}
+		}, {
+			label: "Plugins",
+			click() {
+				loadURL("plugins");
+			}
+		}, {
 			type: "separator"
 		}, {
 			label: "Exit",

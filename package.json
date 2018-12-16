@@ -21,6 +21,7 @@
 		"fs-extra": "^7.0.1",
 		"node-fetch": "^2.3.0",
 		"shelljs": "^0.8.3",
+		"tabletop": "^1.5.2",
 		"unzip": "^0.1.11"
 	}
 }

@@ -7,20 +7,12 @@ input#distLocation {
 	width: 370px;
 }
 
-input#specLocation {
-	width: 370px;
-}
-
-p#failP {
-	color: red;
-}
-
-p#successP {
-	color: lime;
-}
-
 input#submit {
 	position: absolute;
 	bottom: 10;
 	right: 10;
+}
+
+div#pluginList>div {
+	padding-bottom: 8px;
 }
