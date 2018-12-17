@@ -8,6 +8,9 @@ async function downloadZipFromGithub(githubPage) {
 	console.log("githubPage", githubPage);
 	const reg = /https?:\/\/github\.com\/(.+)\/([^/\s]+)/gi;
 	const arr = reg.exec(githubPage);
+	if (!arr) {
+		return -1;
+	}
 	const name = arr[1];
 	const repo = arr[2];
 	console.log("name", name, "repo", repo);
@@ -21,21 +24,29 @@ async function downloadZipFromGithub(githubPage) {
 	console.log("latestRes", latestRes);
 	const latestjson = await latestRes.json();
 	console.log("latestjson", latestjson);
+	if (!latestjson.assets) {
+		return -3;
+	}
 	console.log("Found latest release", latestjson.assets[0].browser_download_url);
 
-
-	const currentRes = await fetch(latestjson.assets[0].browser_download_url);
-	const dest = fs.createWriteStream(path.resolve(`${__dirname}/${latestjson.assets[0].name}`));
-	currentRes.body.pipe(dest);
-	return new Promise(resolve => {
-		dest.on("close", () => {
-			console.log("Downloaded to", path.resolve(`${__dirname}/${latestjson.assets[0].name}`));
-			resolve({
-				repoName: repo,
-				path: path.resolve(`${__dirname}/${latestjson.assets[0].name}`)
+	const reg1 = /(?=\.zip$)/img;
+	const arr1 = reg1.exec(latestjson.assets[0].name);
+	if (arr1 && arr1[0] === "") {
+		const currentRes = await fetch(latestjson.assets[0].browser_download_url);
+		const dest = fs.createWriteStream(path.resolve(`${__dirname}/${latestjson.assets[0].name}`));
+		currentRes.body.pipe(dest);
+		return new Promise(resolve => {
+			dest.on("close", () => {
+				console.log("Downloaded to", path.resolve(`${__dirname}/${latestjson.assets[0].name}`));
+				resolve({
+					repoName: repo,
+					path: path.resolve(`${__dirname}/${latestjson.assets[0].name}`)
+				});
 			});
 		});
-	});
+	} else {
+		return -2;
+	}
 }
 
 function getEntries(zipLoc) {
@@ -63,7 +74,7 @@ function checkPluginZipFileStructure(zipLoc, destLoc, plugin) {
 			getEntries(zipLoc).then(entryCount => {
 				console.log("entryCount", entryCount);
 				if (entryCount > 1) {
-					fs.mkdir(`${destLoc}/${plugin}`, err => {
+					fs.ensureDir(`${destLoc}/${plugin}`, err => {
 						if (err) {
 							reject(err);
 						} else {

@@ -68,23 +68,41 @@ window.onload = () => {
 		for (const index of checked) {
 			wantedPlugins.push(plugs[index]);
 		}
-		if (!wantedPlugins[0]) {
-			console.log("No plugins selected");
+		if (wantedPlugins[0]) {
+			console.log(wantedPlugins);
+			const infoP = document.getElementById("infoP") || document.getElementById("successP") || document.getElementById("failP") || document.createElement("P");
+			infoP.id = "infoP";
+			document.body.appendChild(infoP);
+			downloadPlugins(wantedPlugins, infoP, distLocInput.value).then(msg => {
+				if (msg) {
+					infoP.innerText = msg;
+					infoP.id = "failP";
+				} else {
+					infoP.innerText = "Done!";
+					infoP.id = "successP";
+				}
+			});
 		}
-		console.log(wantedPlugins);
-		util.downloadZipFromGithub(wantedPlugins[0].Source).then(zipLocation => {
-			console.log("zipLocation", zipLocation);
-			util.extractZip(zipLocation.path, path.resolve(`${distLocInput.value}/Distance_Data/Spectrum/Plugins/`), true, zipLocation.repoName);
-		});
-		// const specLocInput = document.getElementById("specLocation");
-		// if (!specLocInput.value) {
-		// 	infoP.innerText = "Downloading...";
-		// 	console.log("Downloading latest Spectrum...");
-		// 	downloadLatest(distLocInput.value);
-		// } else if (distLocInput.value && specLocInput.value) {
-		// 	extractZip(specLocInput.value, distLocInput.value);
-		// }
 	});
+
+	async function downloadPlugins(wantedPlugins, infoP, distLoc) {
+		for (let i = 0; i < wantedPlugins.length; i++) {
+			infoP.innerText = `Downloading ${wantedPlugins[i].Name}...`;
+			const zipLocation = await util.downloadZipFromGithub(wantedPlugins[i].Source);
+			console.log("zipLocation", zipLocation);
+			if (zipLocation !== -1 && zipLocation !== -2 && zipLocation !== -3) {
+				infoP.innerText = `Extracting ${wantedPlugins[i].Name}...`;
+				await util.extractZip(zipLocation.path, path.resolve(`${distLoc}/Distance_Data/Spectrum/Plugins/`), true, zipLocation.repoName);
+			} else if (zipLocation === -1) {
+				return `Failed downloading ${wantedPlugins[i].Name}. Remaining plugins skipped.`;
+			} else if (zipLocation === -2) {
+				return `${wantedPlugins[i].Name} is not in zip format. Remaining plugins skipped.`;
+			} else if (zipLocation === -3) {
+				return `${wantedPlugins[i].Name} either has no releases or is in a pre-release state. Remaining plugins skipped.`;
+			}
+		}
+		return;
+	}
 
 
 	Tabletop.init({

@@ -18,9 +18,11 @@ function createWindow() {
 	// Create the browser window.
 	let w = 385;
 	let h = 235;
+	let resize = false;
 	if (isDev) {
 		w = 900;
 		h = 650;
+		resize = true;
 	}
 	win = new BrowserWindow({
 		//icon: path.join(__dirname, "src/assets/images/favicon.png"),
@@ -28,7 +30,7 @@ function createWindow() {
 		backgroundColor: "#444",
 		width: w,
 		height: h,
-		resizable: false,
+		resizable: resize,
 		maximizable: false,
 		fullscreenable: false
 	});
