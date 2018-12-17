@@ -2,3 +2,4 @@ node_modules
 dist
 src/Spectrum.zip
 src/tmp
+src/assets/*.zip

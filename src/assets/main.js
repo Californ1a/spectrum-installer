@@ -1,20 +1,15 @@
 const rq = require("electron-require");
 const dialog = rq.electron("dialog");
 const os = rq("os");
-const fs = rq("fs-extra");
 const path = rq("path");
-const unzip = rq("unzip");
 const isDev = rq("electron-is-dev");
-const fetch = rq("node-fetch");
-// const shell = rq.electron("shell");
-// const {
-// 	spawn
-// } = rq("child_process");
+const util = rq("./assets/util.js");
 const shelljs = rq("shelljs");
 const winDir = "C:\\Program Files (x86)\\Steam\\steamapps\\common";
 const linuxDir = "~/.local/share/Steam/steamapps/common";
 const winInstall = "install_windows.bat";
 const linuxInstall = "install_linux.sh";
+const spectrumUrl = "https://github.com/Ciastex/Spectrum";
 
 window.onload = () => {
 	if (isDev) {
@@ -56,62 +51,54 @@ window.onload = () => {
 		infoP.setAttribute("id", "infoP");
 		infoP.innerText = "Checking...";
 		document.body.appendChild(infoP);
-		const distLocInput = document.getElementById("distLocation");
-		const specLocInput = document.getElementById("specLocation");
-		if (!specLocInput.value) {
-			infoP.innerText = "Downloading...";
-			console.log("Downloading latest Spectrum...");
-			downloadLatest(distLocInput.value);
-		} else if (distLocInput.value && specLocInput.value) {
-			extractZip(specLocInput.value, distLocInput.value);
-		}
+		spectrumInstallWrapper(infoP);
 	});
 };
 
-function extractZip(specLoc, distLoc) {
-	console.log(specLoc, distLoc);
-	const infoP = document.getElementById("failP") || document.getElementById("successP") || document.getElementById("infoP");
+async function spectrumInstallWrapper(infoP) {
+	const distLocInput = document.getElementById("distLocation");
+	const specLocInput = document.getElementById("specLocation");
+	let downloadedZip;
+	if (!specLocInput.value) {
+		infoP.innerText = "Downloading...";
+		console.log("Downloading latest Spectrum...");
+		downloadedZip = await util.downloadZipFromGithub(spectrumUrl);
+	}
 	infoP.innerText = "Extracting...";
-	fs.createReadStream(specLoc).pipe(unzip.Extract({
-		path: `${path.resolve(__dirname)}/tmp/`
-	}).on("close", () => {
-		console.log("Extracted");
-		if (path.resolve(specLoc) === path.resolve(`${__dirname}/Spectrum.zip`)) {
-			fs.remove(path.resolve(`${__dirname}/Spectrum.zip`));
-			console.log("Deleted downloaded Spectrum zip");
-		}
-		installSpectrum(distLoc);
-	}));
+	const spectrumZip = downloadedZip.path || path.resolve(specLocInput.value);
+	const deleteZip = (downloadedZip.path) ? true : false;
+	await util.extractZip(spectrumZip.path, path.resolve(`${distLocInput.value}/Distance_Data/`), deleteZip, false);
+	return installSpectrum(path.resolve(distLocInput.value));
 }
 
-async function downloadLatest(distLoc) {
-	const repo = "Ciastex/Spectrum";
-	const latestRes = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
-		method: "GET",
-		headers: {
-			"Cache-Control": "no-cache",
-			Accept: "application/vnd.github.v3+json"
-		}
-	});
-	const latestjson = await latestRes.json();
-	console.log("Found latest release");
-	const currentRes = await fetch(latestjson.assets[0].browser_download_url);
-	const dest = fs.createWriteStream(`${path.resolve(__dirname)}/Spectrum.zip`);
-	currentRes.body.pipe(dest);
-	dest.on("close", () => {
-		console.log("Downloaded to", path.resolve(__dirname));
-		extractZip(`${path.resolve(__dirname)}/Spectrum.zip`, distLoc);
-	});
-}
+// async function downloadLatest() {
+// 	const repo = "Ciastex/Spectrum";
+// 	const latestRes = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
+// 		method: "GET",
+// 		headers: {
+// 			"Cache-Control": "no-cache",
+// 			Accept: "application/vnd.github.v3+json"
+// 		}
+// 	});
+// 	const latestjson = await latestRes.json();
+// 	console.log("Found latest release");
+// 	const currentRes = await fetch(latestjson.assets[0].browser_download_url);
+// 	const dest = fs.createWriteStream(path.resolve(`${__dirname}/${latestjson.assets[0].name}`));
+// 	currentRes.body.pipe(dest);
+// 	dest.on("close", () => {
+// 		console.log("Downloaded to", path.resolve(__dirname));
+// 		extractZip(path.resolve(`${__dirname}/${latestjson.assets[0].name}`), distLoc);
+// 	});
+// }
 
 async function installSpectrum(distLoc) {
 	const infoP = document.getElementById("failP") || document.getElementById("successP") || document.getElementById("infoP");
 	infoP.innerText = "Installing...";
 	try {
-		await fs.copy(`${path.resolve(__dirname)}/tmp/`, `${distLoc}/Distance_Data/`);
-		console.log("Copied");
-		await fs.remove(`${path.resolve(__dirname)}/tmp/`);
-		console.log("Deleted tmp");
+		// await fs.copy(`${path.resolve(__dirname)}/tmp/`, `${distLoc}/Distance_Data/`);
+		// console.log("Copied");
+		// await fs.remove(`${path.resolve(__dirname)}/tmp/`);
+		// console.log("Deleted tmp");
 		const file = os.platform() === "win32" ? winInstall : os.platform() === "linux" ? linuxInstall : "";
 		if (file === "") {
 			throw new Error("Wrong platform");
