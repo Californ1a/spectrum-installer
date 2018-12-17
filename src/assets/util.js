@@ -1,8 +1,12 @@
 const rq = require("electron-require");
 const fs = rq("fs-extra");
 const path = rq("path");
+const url = rq("url");
 const fetch = rq("node-fetch");
-const unzip = rq("unzip");
+//const unzip = rq("unzip");
+const sevenBin = require("7zip-bin");
+const Seven = require("node-7z");
+const pathTo7zip = sevenBin.path7za;
 
 async function downloadZipFromGithub(githubPage) {
 	console.log("githubPage", githubPage);
@@ -29,18 +33,21 @@ async function downloadZipFromGithub(githubPage) {
 	}
 	console.log("Found latest release", latestjson.assets[0].browser_download_url);
 
-	// latestjson.assets[0].name
-	// latestjson.assets[0].browser_download_url
-	const zipPath = await directDownloadZip(latestjson.assets[0].browser_download_url, repo);
-	console.log("zipPath", zipPath);
-	return zipPath;
+	const testType = path.parse(latestjson.assets[0].name);
+	if (testType.ext === ".zip" || testType.ext === ".7z") {
+		const zipPath = await directDownloadZip(latestjson.assets[0].browser_download_url, repo);
+		console.log("zipPath", zipPath);
+		return zipPath;
+	} else {
+		return -4;
+	}
 }
 
 async function directDownloadZip(fullUrl, repo) {
-	const reg1 = /[^/\\&\?]+\.\w{3,4}(?=([\?&].\.zip$|$))/img; //eslint-disable-line no-useless-escape
-	const arr1 = reg1.exec(fullUrl);
-	if (arr1) {
-		const filename = arr1[0];
+	const testType = path.parse(url.parse(fullUrl).pathname);
+	console.log("testType", testType);
+	if (testType.ext === ".zip" || testType.ext === ".7z") {
+		const filename = testType.base;
 		const currentRes = await fetch(fullUrl);
 		const dest = fs.createWriteStream(path.resolve(`${__dirname}/${filename}`));
 		currentRes.body.pipe(dest);
@@ -59,21 +66,27 @@ async function directDownloadZip(fullUrl, repo) {
 }
 
 function getEntries(zipLoc) {
-	return new Promise(resolve => {
+	return new Promise((resolve, reject) => {
 		const uniqueEntries = [];
-		const stream = fs.createReadStream(zipLoc).pipe(unzip.Parse());
-		stream.on("entry", entry => {
-			console.log(entry);
+		const myStream = Seven.list(zipLoc, {
+			$bin: pathTo7zip
+		});
+		myStream.on("data", data => {
+			console.log("data", data);
 			const reg = /^([^/\s]+)/img;
-			const match = reg.exec(entry.path)[1];
+			const match = reg.exec(data.file);
 			if (!uniqueEntries.includes(match)) {
 				uniqueEntries.push(match);
 			}
-			entry.autodrain();
 		});
-		stream.on("close", () => {
+		myStream.on("end", () => {
+			console.log("myStream.info", myStream.info);
 			resolve(uniqueEntries.length);
 		});
+		myStream.on("error", err => {
+			reject(err);
+		});
+
 	});
 }
 
@@ -101,16 +114,15 @@ function checkPluginZipFileStructure(zipLoc, destLoc, plugin) {
 	});
 }
 
-
-
 function extractZip(zipLoc, olddestLoc, deleteZip, plugin) {
 	return new Promise((resolve, reject) => {
 		console.log("zipLoc", zipLoc, "olddestLoc", olddestLoc);
 		checkPluginZipFileStructure(zipLoc, olddestLoc, plugin).then(destLoc => {
 			console.log("destLoc", destLoc);
-			fs.createReadStream(zipLoc).pipe(unzip.Extract({
-				path: path.resolve(destLoc)
-			}).on("close", () => {
+			const myStream = Seven.extract(zipLoc, destLoc, {
+				$bin: pathTo7zip
+			});
+			myStream.on("end", () => {
 				console.log("Extracted");
 				if (deleteZip) {
 					fs.remove(path.resolve(zipLoc), err => {
@@ -124,7 +136,10 @@ function extractZip(zipLoc, olddestLoc, deleteZip, plugin) {
 				} else {
 					resolve();
 				}
-			}));
+			});
+			myStream.on("error", err => {
+				reject(err);
+			});
 		});
 	});
 }

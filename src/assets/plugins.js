@@ -3,6 +3,7 @@ const dialog = rq.electron("dialog");
 const Tabletop = rq("tabletop");
 const os = rq("os");
 const path = rq("path");
+const url = rq("url");
 const util = require("./assets/util.js");
 const winDir = "C:\\Program Files (x86)\\Steam\\steamapps\\common";
 const linuxDir = "~/.local/share/Steam/steamapps/common";
@@ -50,10 +51,6 @@ window.onload = () => {
 	});
 
 	submitBtn.addEventListener("click", () => {
-		// const infoP = document.getElementById("failP") || document.getElementById("successP") || document.getElementById("infoP") || document.createElement("P");
-		// infoP.setAttribute("id", "infoP");
-		// infoP.innerText = "Checking...";
-		// document.body.appendChild(infoP);
 		const distLocInput = document.getElementById("distLocation");
 		const plugins = document.getElementsByClassName("plugin");
 		const checked = [];
@@ -86,37 +83,44 @@ window.onload = () => {
 	});
 
 	async function downloadPlugins(wantedPlugins, infoP, distLoc) {
+		let tryDirect = false;
 		for (let i = 0; i < wantedPlugins.length; i++) {
 			infoP.innerText = `Downloading ${wantedPlugins[i].Name}...`;
 			let zipLocation;
 			const reg = /https?:\/\/github\.com\/(.+)\/([^/\s]+)/gi;
 			const arr = reg.exec(wantedPlugins[i].Source);
-			if (!arr) {
-				const reg1 = /(?=\.zip$)/img;
-				const arr1 = reg1.exec(wantedPlugins[i].Download);
-				if (!arr1) {
-					zipLocation = -2;
+			if (tryDirect || !arr) {
+				const testType = path.parse(url.parse(wantedPlugins[i].Download).pathname);
+				console.log("testType", testType);
+				if (testType.ext === ".zip" || testType.ext === ".7z") {
+					zipLocation = await util.directDownloadZip(wantedPlugins[i].Download, testType.name);
 				} else {
-					zipLocation = await util.directDownloadZip(wantedPlugins[i].Download);
+					zipLocation = -2;
 				}
 			} else {
 				zipLocation = await util.downloadZipFromGithub(wantedPlugins[i].Source);
 			}
 			console.log("zipLocation", zipLocation);
-			if (zipLocation !== -1 && zipLocation !== -2 && zipLocation !== -3) {
-				infoP.innerText = `Extracting ${wantedPlugins[i].Name}...`;
-				await util.extractZip(zipLocation.path, path.resolve(`${distLoc}/Distance_Data/Spectrum/Plugins/`), true, zipLocation.repoName);
-			} else if (zipLocation === -1) {
-				return `Failed downloading ${wantedPlugins[i].Name}. Remaining plugins skipped.`;
-			} else if (zipLocation === -2) {
-				return `${wantedPlugins[i].Name} is not in zip format. Remaining plugins skipped.`;
-			} else if (zipLocation === -3) {
-				return `${wantedPlugins[i].Name} either has no releases or is in a pre-release state. Remaining plugins skipped.`;
+
+			switch (zipLocation) {
+				case -1:
+					return `Failed downloading ${wantedPlugins[i].Name}. Remaining plugins skipped.`;
+				case -2:
+					return `${wantedPlugins[i].Name} is not in zip or 7z format. Remaining plugins skipped.`;
+				case -3:
+					return `${wantedPlugins[i].Name} either has no releases or is in a pre-release state. Remaining plugins skipped.`;
+				case -4:
+					i--;
+					tryDirect = true;
+					break;
+				default:
+					infoP.innerText = `Extracting ${wantedPlugins[i].Name}...`;
+					await util.extractZip(zipLocation.path, path.resolve(`${distLoc}/Distance_Data/Spectrum/Plugins/`), true, zipLocation.repoName);
 			}
+
 		}
 		return;
 	}
-
 
 	Tabletop.init({
 		key: "https://docs.google.com/spreadsheets/d/1vMQFPP3VzR9KN3SEWljszxyuGZCQ-GvFa_5sp87SlnQ/pubhtml",
