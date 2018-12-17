@@ -85,16 +85,17 @@ function extractZip(specLoc, distLoc) {
 }
 
 async function downloadLatest(distLoc) {
-	const latestRes = await fetch("https://github.com/Ciastex/Spectrum/releases/latest", {
+	const repo = "Ciastex/Spectrum";
+	const latestRes = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
 		method: "GET",
 		headers: {
 			"Cache-Control": "no-cache",
-			Accept: "application/json"
+			Accept: "application/vnd.github.v3+json"
 		}
 	});
 	const latestjson = await latestRes.json();
 	console.log("Found latest release");
-	const currentRes = await fetch(`https://github.com/Ciastex/Spectrum/releases/download/${latestjson.tag_name}/Spectrum.zip`);
+	const currentRes = await fetch(latestjson.assets[0].browser_download_url);
 	const dest = fs.createWriteStream(`${path.resolve(__dirname)}/Spectrum.zip`);
 	currentRes.body.pipe(dest);
 	dest.on("close", () => {
