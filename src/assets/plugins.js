@@ -74,7 +74,7 @@ window.onload = () => {
 		console.log(wantedPlugins);
 		util.downloadZipFromGithub(wantedPlugins[0].Source).then(zipLocation => {
 			console.log("zipLocation", zipLocation);
-			util.extractZip(zipLocation.path, path.resolve(`${distLocInput.value}/Distance_Data/Spectrum/Plugins/`), false, zipLocation.repoName);
+			util.extractZip(zipLocation.path, path.resolve(`${distLocInput.value}/Distance_Data/Spectrum/Plugins/`), true, zipLocation.repoName);
 		});
 		// const specLocInput = document.getElementById("specLocation");
 		// if (!specLocInput.value) {

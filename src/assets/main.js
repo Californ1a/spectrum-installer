@@ -67,7 +67,7 @@ async function spectrumInstallWrapper(infoP) {
 	infoP.innerText = "Extracting...";
 	const spectrumZip = downloadedZip.path || path.resolve(specLocInput.value);
 	const deleteZip = (downloadedZip.path) ? true : false;
-	await util.extractZip(spectrumZip.path, path.resolve(`${distLocInput.value}/Distance_Data/`), deleteZip, false);
+	await util.extractZip(spectrumZip, path.resolve(`${distLocInput.value}/Distance_Data/`), deleteZip, false);
 	return installSpectrum(path.resolve(distLocInput.value));
 }
 
