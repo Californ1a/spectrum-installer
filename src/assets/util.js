@@ -29,18 +29,27 @@ async function downloadZipFromGithub(githubPage) {
 	}
 	console.log("Found latest release", latestjson.assets[0].browser_download_url);
 
-	const reg1 = /(?=\.zip$)/img;
-	const arr1 = reg1.exec(latestjson.assets[0].name);
-	if (arr1 && arr1[0] === "") {
-		const currentRes = await fetch(latestjson.assets[0].browser_download_url);
-		const dest = fs.createWriteStream(path.resolve(`${__dirname}/${latestjson.assets[0].name}`));
+	// latestjson.assets[0].name
+	// latestjson.assets[0].browser_download_url
+	const zipPath = await directDownloadZip(latestjson.assets[0].browser_download_url, repo);
+	console.log("zipPath", zipPath);
+	return zipPath;
+}
+
+async function directDownloadZip(fullUrl, repo) {
+	const reg1 = /[^/\\&\?]+\.\w{3,4}(?=([\?&].\.zip$|$))/img; //eslint-disable-line no-useless-escape
+	const arr1 = reg1.exec(fullUrl);
+	if (arr1) {
+		const filename = arr1[0];
+		const currentRes = await fetch(fullUrl);
+		const dest = fs.createWriteStream(path.resolve(`${__dirname}/${filename}`));
 		currentRes.body.pipe(dest);
 		return new Promise(resolve => {
 			dest.on("close", () => {
-				console.log("Downloaded to", path.resolve(`${__dirname}/${latestjson.assets[0].name}`));
+				console.log("Downloaded to", path.resolve(`${__dirname}/${filename}`));
 				resolve({
 					repoName: repo,
-					path: path.resolve(`${__dirname}/${latestjson.assets[0].name}`)
+					path: path.resolve(`${__dirname}/${filename}`)
 				});
 			});
 		});
@@ -122,5 +131,6 @@ function extractZip(zipLoc, olddestLoc, deleteZip, plugin) {
 
 module.exports = {
 	downloadZipFromGithub,
-	extractZip
+	extractZip,
+	directDownloadZip
 };

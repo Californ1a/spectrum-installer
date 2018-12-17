@@ -88,7 +88,20 @@ window.onload = () => {
 	async function downloadPlugins(wantedPlugins, infoP, distLoc) {
 		for (let i = 0; i < wantedPlugins.length; i++) {
 			infoP.innerText = `Downloading ${wantedPlugins[i].Name}...`;
-			const zipLocation = await util.downloadZipFromGithub(wantedPlugins[i].Source);
+			let zipLocation;
+			const reg = /https?:\/\/github\.com\/(.+)\/([^/\s]+)/gi;
+			const arr = reg.exec(wantedPlugins[i].Source);
+			if (!arr) {
+				const reg1 = /(?=\.zip$)/img;
+				const arr1 = reg1.exec(wantedPlugins[i].Download);
+				if (!arr1) {
+					zipLocation = -2;
+				} else {
+					zipLocation = await util.directDownloadZip(wantedPlugins[i].Download);
+				}
+			} else {
+				zipLocation = await util.downloadZipFromGithub(wantedPlugins[i].Source);
+			}
 			console.log("zipLocation", zipLocation);
 			if (zipLocation !== -1 && zipLocation !== -2 && zipLocation !== -3) {
 				infoP.innerText = `Extracting ${wantedPlugins[i].Name}...`;

@@ -5,8 +5,8 @@ const path = rq("path");
 const isDev = rq("electron-is-dev");
 const util = rq("./assets/util.js");
 const shelljs = rq("shelljs");
-const winDir = "C:\\Program Files (x86)\\Steam\\steamapps\\common";
-const linuxDir = "~/.local/share/Steam/steamapps/common";
+const winDir = path.resolve("C:/Program Files (x86)/Steam/steamapps/common");
+const linuxDir = path.resolve("~/.local/share/Steam/steamapps/common");
 const winInstall = "install_windows.bat";
 const linuxInstall = "install_linux.sh";
 const spectrumUrl = "https://github.com/Ciastex/Spectrum";
@@ -14,7 +14,7 @@ const spectrumUrl = "https://github.com/Ciastex/Spectrum";
 window.onload = () => {
 	if (isDev) {
 		const specLoc = document.getElementById("specLocation");
-		specLoc.value = "E:\\User Profile\\Downloads\\Spectrum.zip";
+		specLoc.value = path.resolve("E:/User Profile/Downloads/Spectrum.zip");
 	}
 	const locBrowse = document.getElementById("locBrowseBtn");
 	const specBrowse = document.getElementById("specBrowseBtn");
@@ -62,12 +62,14 @@ async function spectrumInstallWrapper(infoP) {
 	if (!specLocInput.value) {
 		infoP.innerText = "Downloading...";
 		console.log("Downloading latest Spectrum...");
-		downloadedZip = await util.downloadZipFromGithub(spectrumUrl);
+		const downloadInfo = await util.downloadZipFromGithub(spectrumUrl);
+		downloadedZip = downloadInfo.path;
 	}
 	infoP.innerText = "Extracting...";
-	const spectrumZip = downloadedZip.path || path.resolve(specLocInput.value);
-	const deleteZip = (downloadedZip.path) ? true : false;
-	await util.extractZip(spectrumZip, path.resolve(`${distLocInput.value}/Distance_Data/`), deleteZip, false);
+	console.log("downloadedZip", downloadedZip, "specLocInput.value", specLocInput.value);
+	const spectrumZip = downloadedZip || specLocInput.value;
+	const deleteZip = (specLocInput.value) ? false : true;
+	await util.extractZip(path.resolve(spectrumZip), path.resolve(`${distLocInput.value}/Distance_Data/`), deleteZip, false);
 	return installSpectrum(path.resolve(distLocInput.value));
 }
 
