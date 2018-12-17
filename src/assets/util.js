@@ -73,8 +73,8 @@ function getEntries(zipLoc) {
 		});
 		myStream.on("data", data => {
 			console.log("data", data);
-			const reg = /^([^/\s]+)/img;
-			const match = reg.exec(data.file);
+			const reg = /^([^/\s]+).*$/img;
+			const match = reg.exec(data.file)[1];
 			if (!uniqueEntries.includes(match)) {
 				uniqueEntries.push(match);
 			}
@@ -119,7 +119,7 @@ function extractZip(zipLoc, olddestLoc, deleteZip, plugin) {
 		console.log("zipLoc", zipLoc, "olddestLoc", olddestLoc);
 		checkPluginZipFileStructure(zipLoc, olddestLoc, plugin).then(destLoc => {
 			console.log("destLoc", destLoc);
-			const myStream = Seven.extract(zipLoc, destLoc, {
+			const myStream = Seven.extractFull(zipLoc, destLoc, {
 				$bin: pathTo7zip
 			});
 			myStream.on("end", () => {
